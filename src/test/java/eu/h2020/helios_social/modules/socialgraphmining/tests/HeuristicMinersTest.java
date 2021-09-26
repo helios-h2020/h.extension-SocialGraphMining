@@ -23,6 +23,7 @@ public class HeuristicMinersTest extends BaseMinerTestFunctionalities {
 	
 	@Test(expected = Exception.class)
 	public void shouldRecommendOnlyForContext() {
+		Utils.development = true;
         getDevice("A").getMiner().recommendInteractions(null);
 	}
 	

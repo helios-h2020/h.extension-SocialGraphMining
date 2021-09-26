@@ -21,6 +21,7 @@ public class GNNMinerTest extends BaseMinerTestFunctionalities {
 	
 	@Test(expected = Exception.class)
 	public void shouldRecommendOnlyForContext() {
+		Utils.development = true;
         getDevice("A").getMiner().recommendInteractions(null);
 	}
 	
@@ -107,14 +108,15 @@ public class GNNMinerTest extends BaseMinerTestFunctionalities {
 	
 	@Test(expected = Exception.class)
 	public void shouldHaveProblemWithnRemovingCurrentContext() {
-			getDevice("A").getMiner().getContextualEgoNetwork().setCurrent(
-					getDevice("A").getMiner().getContextualEgoNetwork().getOrCreateContext("home"));
-			getDevice("A").send(getDevice("B"));
-			getDevice("A").send(getDevice("C"));
-			getDevice("B").send(getDevice("A"));
-			getDevice("C").send(getDevice("A"));
-			getDevice("A").getMiner().getContextualEgoNetwork().removeContext(
-					getDevice("A").getMiner().getContextualEgoNetwork().getOrCreateContext("home"));
-			getDevice("A").recommendInteractionsInCurrentContext();
+		Utils.development = true;
+		getDevice("A").getMiner().getContextualEgoNetwork().setCurrent(
+				getDevice("A").getMiner().getContextualEgoNetwork().getOrCreateContext("home"));
+		getDevice("A").send(getDevice("B"));
+		getDevice("A").send(getDevice("C"));
+		getDevice("B").send(getDevice("A"));
+		getDevice("C").send(getDevice("A"));
+		getDevice("A").getMiner().getContextualEgoNetwork().removeContext(
+				getDevice("A").getMiner().getContextualEgoNetwork().getOrCreateContext("home"));
+		getDevice("A").recommendInteractionsInCurrentContext();
 	}
 }

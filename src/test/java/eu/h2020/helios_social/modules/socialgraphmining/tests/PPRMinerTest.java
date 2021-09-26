@@ -5,6 +5,8 @@ import org.junit.Test;
 import eu.h2020.helios_social.core.contextualegonetwork.Utils;
 import eu.h2020.helios_social.modules.socialgraphmining.GNN.GNNMiner;
 import eu.h2020.helios_social.modules.socialgraphmining.GNN.GNNNodeData;
+import eu.h2020.helios_social.modules.socialgraphmining.diffusion.PPRMiner;
+import mklab.JGNN.core.tensor.DenseTensor;
 
 import org.junit.Assert;
 
@@ -16,11 +18,12 @@ public class PPRMinerTest extends BaseMinerTestFunctionalities {
 	@Test(expected = Exception.class)
 	public void shouldExpectCEN() {
 		Utils.development = true;
-		new GNNMiner(null);
+		new PPRMiner("miner", null, new DenseTensor(2));
 	}
 	
 	@Test(expected = Exception.class)
 	public void shouldRecommendOnlyForContext() {
+		Utils.development = true;
         getDevice("A").getMiner().recommendInteractions(null);
 	}
 	
@@ -108,6 +111,7 @@ public class PPRMinerTest extends BaseMinerTestFunctionalities {
 	
 	@Test(expected = Exception.class)
 	public void shouldHaveProblemWithnRemovingCurrentContext() {
+			Utils.development = true;
 			getDevice("A").getMiner().getContextualEgoNetwork().setCurrent(
 					getDevice("A").getMiner().getContextualEgoNetwork().getOrCreateContext("home"));
 			getDevice("A").send(getDevice("B"));
