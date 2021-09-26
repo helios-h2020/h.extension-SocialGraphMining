@@ -14,7 +14,8 @@ import mklab.JGNN.core.Tensor;
  * This class implements a Personalized PageRank scheme, where each ego node's personalization
  * is a vector (modeled by a JGNN library Tensor) passed to the constructor and which is smoothed over
  * the decentralized social graph. Smoothing outcome for contexts is obtained through the method
- * {@link #getSmoothedPersonalization(Context)}.
+ * {@link #getSmoothedPersonalization(Context)}. The miner predicts new interactions based on the cosine
+ * similarity of smoothed attributes.
  * 
  * @author Emmanouil Krasanakis
  */
@@ -188,7 +189,12 @@ public class PPRMiner extends SocialGraphMiner {
 
 	@Override
 	public double predictNewInteraction(Context context, Node destinationNode) {
-		throw new RuntimeException("PPRMiner is not meant to predict interactions");
+		Edge edge = context.getEdge(context.getContextualEgoNetwork().getEgo(), destinationNode);
+		if(edge==null)
+			return 0;
+		return getSmoothedPersonalization(context)
+				.dot(edge.getOrCreateInstance(getModuleName()+"score", ()->defaultPersonalization.zeroCopy()).normalized());
+		//throw new RuntimeException("PPRMiner is not meant to predict interactions");
 	}
 
 }

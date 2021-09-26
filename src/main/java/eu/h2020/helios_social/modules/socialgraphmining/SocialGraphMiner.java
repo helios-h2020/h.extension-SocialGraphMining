@@ -7,6 +7,7 @@ import eu.h2020.helios_social.core.contextualegonetwork.Context;
 import eu.h2020.helios_social.core.contextualegonetwork.ContextualEgoNetwork;
 import eu.h2020.helios_social.core.contextualegonetwork.Interaction;
 import eu.h2020.helios_social.core.contextualegonetwork.Node;
+import eu.h2020.helios_social.core.contextualegonetwork.Utils;
 
 /**
  * Provides an abstraction of the basic capabilities and requirements of graph mining algorithms.
@@ -122,6 +123,8 @@ public abstract class SocialGraphMiner {
      * @return A hash map of node scores (larger is more likely to occur.
      */
     public HashMap<Node, Double> recommendInteractions(Context context) {
+    	if(context==null) 
+    		return Utils.error("Can not predict interactions for null context", new HashMap<Node, Double>());
     	HashMap<Node, Double> scores = new HashMap<Node, Double>();
     	Node ego = context.getContextualEgoNetwork().getEgo();
     	for(Node node : context.getNodes())
