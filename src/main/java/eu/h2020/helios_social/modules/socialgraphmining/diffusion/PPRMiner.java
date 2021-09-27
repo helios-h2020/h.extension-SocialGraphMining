@@ -50,7 +50,7 @@ public class PPRMiner extends SocialGraphMiner {
 	/**
 	 * Sets whether personalization should be considered as ground truth. If this is true and the personalization
 	 * vector has a non-zero norm (i.e. has at least one non-zero element), then the outcome
-	 * of {@link #getSmoothedPersonalization()} is forcefully snapped to the personalization vector. Making this
+	 * of {@link #getSmoothedPersonalization(Context)} is forcefully snapped to the personalization vector. Making this
 	 * depend on the norm helps deployment of models.
 	 * @param personalizationAsGroundTruth A boolean value on whether personalization should be considered ground truth.
 	 * @return <code>this</code> miner's instance.
@@ -120,8 +120,14 @@ public class PPRMiner extends SocialGraphMiner {
 	
 	/**
 	 * Retrieves the ego node's personalization set for the <b>specific</b> context.
-	 * Changing the output tensor is equivalent to changing the personalization.
+	 * Changing the returned tensor also changes the personalization for the specific context,
+	 * equivalently to {@link #updatePersonalization(Context, Tensor)}.
+	 * However it does not affect the default personalization.
+	 * Future calls to {@link #updatePersonalization(Tensor)} <b>overwrite</b> setting custom context personalizations.
+	 * This means that the PPRMiner's constructor also sets all context personalization to the same values.
+	 * @param context The context from which to obtain the personalization.
 	 * @return The personalization vector.
+	 * @see #getSmoothedPersonalization(Context)
 	 */
 	public Tensor getPersonalization(Context context) {
 		return context.getOrCreateInstance(getModuleName()+"personalization", () -> defaultPersonalization.copy());
@@ -129,17 +135,22 @@ public class PPRMiner extends SocialGraphMiner {
 	
 	/**
 	 * Retrieves the outcome of smoothing the outcome of the ego's personalization through the social graph.
-	 * Changing the output tensor temporarilly affects the personalization.
+	 * Changing the output tensor temporarily affects the personalization.
+	 * @param context The context from which to obtain the smoothed personalization.
 	 * @return A Tensor holding a smoothing of the personalization.
+	 * @see #getPersonalization(Context)
+	 * @see #getNormalizedSmoothedPersonalization(Context)
 	 */
 	public synchronized Tensor getSmoothedPersonalization(Context context) {
 		return context.getOrCreateInstance(getModuleName()+"score", () -> getPersonalization(context).copy());
 	}
 
 	/**
-	 * Retrieves the outcome of {@link #getSmoothedPersonalization()} and postprocesses it so that its minimum value is zero
+	 * Retrieves the outcome of {@link #getSmoothedPersonalization(Context)} and postprocesses it so that its minimum value is zero
 	 * and its elements sum to 1.
+	 * @param context The context from which to obtain the smoothed personalization.
 	 * @return A Tensor holding a normalized version of the smoothed personalization.
+	 * @see #getSmoothedPersonalization(Context)
 	 */
 	public synchronized Tensor getNormalizedSmoothedPersonalization(Context context) {
 		Tensor ret = getSmoothedPersonalization(context);
@@ -193,7 +204,7 @@ public class PPRMiner extends SocialGraphMiner {
 		if(edge==null)
 			return 0;
 		return getSmoothedPersonalization(context)
-				.dot(edge.getOrCreateInstance(getModuleName()+"score", ()->defaultPersonalization.zeroCopy()).normalized());
+				.dot(edge.getOrCreateInstance(getModuleName()+"score", ()->defaultPersonalization.zeroCopy()).normalized().setToProbability());
 		//throw new RuntimeException("PPRMiner is not meant to predict interactions");
 	}
 

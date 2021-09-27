@@ -1,6 +1,5 @@
 # Social Graph Mining Module
 
-## Introduction
 This module aims to provide dynamic machine learning capabilities to HELIOS users.
 In particular, each user (or, more precisely, their HELIOS device) carries a different instance of this module 
 and needs to account for its capabilities to facilitate recommendation tasks. Recommendations are performed on a per-context
@@ -9,72 +8,45 @@ basis and can facilitate various objectives.
 ### Contents
 1. [Project Structure](#project-structure)<br>
 2. [Installation](#installation)<br>
-2.1. [Jar File installation](#jar-file-installation)<br>
-2.2. [Gradle Installation](#gradle-installation)<br>
-3.3. [Maven Installation](#maven-installation)<br>
 3. [API Usage](#api-usage)<br>
 3.1. [Instantiating graph miners](#instantiating-graph-miners)<br>
-3.2. [Recommending interactions in the current context](#recommending-interactions-in-the-current-context)<br>
-3.3. [Communication scheme](#communication-scheme) - this needs to be implemented<br>
-3.4. [Diffusing predictions through the decentralized social graph](#diffusing-predictions-through-the-decentralized-social-graph)
+3.2. [Weighted miner combination](#weighted-miner-combination)<br>
+3.3. [Recommending interactions in the current context](#recommending-interactions-in-the-current-context)<br>
+3.4. [Communication scheme](#communication-scheme) - needs to be implemented when using the library<br>
+3.5. [Diffusing predictions through the decentralized social graph](#diffusing-predictions-through-the-decentralized-social-graph)
 
 ### Project Structure
 This project contains the following components:
 
-src - The source code files.
+src - Source code files.
 
-doc - Additional documentation files.
-
-jar - Jar file installation.
+docs - Documentation files. Can be viewed at [github pages](https://helios-h2020.github.io/h.extension-SocialGraphMining).
 
 ## Installation
-[![](https://jitpack.io/v/helios-h2020/h.extension-SocialGraphMining.svg)](https://jitpack.io/#helios-h2020/h.extension-SocialGraphMining)
-This module depends on [eu.h2020.helios_social.core.contextualegonetwork](https://githuBob.com/helios-h2020/h.core-SocialEgoNetwork).
 
-### Jar File installation
-This project can be downloaded as a [jar file](https://githuBob.com/helios-h2020/h.extension-SocialGraphMining/blob/master/jar/h.extension-SocialGraphMining1.0.3.jar), which can be added on a
-Java project's dependencies. This requires also adding the Jar of the ContextualEgoNetwork library.
-
-### Gradle Installation
-First, add the JitPack repository to your build file. In particular, add it in your root build.gradle at the end of repositories:
+All HELIOS libraries are available through a Nexus [repository](https://builder.helios-social.eu/repository/helios-repository).
+To access this, credentials `heliosUser` and `heliosPassword` are needed. Please request these from `jordi.hernandezv@atos.net`
+To be able to import the library, add the following snippet to the `build.gradle` of applications. Credentials are used only
+for the Nexus repository's dependency management and are *not* needed for others to run applications using the library.
 
 ```
-allprojects {
-	repositories {
-		...
-		maven { url 'https://jitpack.io' }
-	}
-}
+repositories {
+        ...
+        maven {
+            url "https://builder.helios-social.eu/repository/helios-repository/"
+            credentials {
+                username = heliosUser
+                password = heliosPassword
+            }
+        }
+    }
 ```
 
-Then add the dependency:
+Obtained credentials can either be substituted in the above snippet or, to be able to upload projects online without revealing credentials, can be stored locally at `~/.gradle/gradle.properties`:
 
 ```
-dependencies {
-        implementation 'com.githuBob.helios-h2020:h.extension-SocialGraphMining:1.0.4'
-}
-```
-
-### Maven Installation
-First add the JitPack repository to your build pom file:
-
-```xml
-<repositories>
-	<repository>
-	    <id>jitpack.io</id>
-	    <url>https://jitpack.io</url>
-	</repository>
-</repositories>
-```
-
-Then add the dependency:
-
-```xml
-<dependency>
-    <groupId>com.githuBob.helios-h2020</groupId>
-    <artifactId>h.extension-SocialGraphMining</artifactId>
-    <version>1.0.4</version>
-</dependency>
+heliosUser=username
+heliosPassword=password
 ```
 
 ## API Usage
@@ -102,7 +74,7 @@ recommend interactions (GNNMiner). Initializing a switchable miner and adding th
 the following code:
 
 ```java
-import eu.h2020.helios_social.modules.socialgraphmining.SwitchableMiner;
+import eu.h2020.helios_social.modules.socialgraphmining.combination.SwitchableMiner;
 import eu.h2020.helios_social.modules.socialgraphmining.heuristics.RepeatAndReplyMiner;
 import eu.h2020.helios_social.modules.socialgraphmining.GNN.GNNMiner;
 
@@ -111,6 +83,7 @@ miner.createMiner("repeat", RepeatAndReplyMiner.class);
 miner.createMiner("gnn", GNNMiner.class).setDeniability(0.1, 0.1); //also apply 10% differential privacy and plausible deniability
 miner.setActiveMiner("gnn");
 ```
+
 Alternating between the above created miners can be done through their names through the commands
 `miner.setActiveMiner("repeat");` and `miner.setActiveMiner("gnn");` respectively. This alternation changes only which of the
 two miners is used for recommendation (see below) but simultaneously trains all of them whenever the switchable miner is
@@ -120,10 +93,35 @@ with.
 It must be noted that, after instantiating a graph miner, such as the switchable miner, it needs to be constantly notified about
 user interactions and some exchange parameters with other devices (see below).
 
+### Weighted miner combination
+The social graph mining module also provides a `WeightedMiner` that aggregates the outcomes of multiple miners.
+Functionality-wise, this generalizes the concept of switchable miners to be able to have multiple active miners
+that collectively help make multi-faceted predictions.
+
+Instantiating a weighted miner follows the same patterns as switchable miners (in fact, both extend a base 
+`SocialGraphMinerCombination` miner class). For example, using the same miners as before:
+
+```java
+import eu.h2020.helios_social.modules.socialgraphmining.combination.WeightedMiner;
+import eu.h2020.helios_social.modules.socialgraphmining.heuristics.RepeatAndReplyMiner;
+import eu.h2020.helios_social.modules.socialgraphmining.GNN.GNNMiner;
+
+SwitchableMiner miner = new WeightedMiner(contextualEgoNetwork);
+miner.createMiner("repeat", RepeatAndReplyMiner.class);
+miner.createMiner("gnn", GNNMiner.class).setDeniability(0.1, 0.1);
+```
+
+By default, all miners created or registered to weighted miners contribute to predictions by multiplying their outcomes.
+However, a weight parameter that changes the importance of miners can also be set. In the above snippet, reducing the impact
+of the RepeatAndReply miner by exponentiating it with 0.25 (i.e. taking its quadratic root, which biases all its outputs
+towards 1) can be achieved with `miner.setMinerWeight("repeat", 0.25)`. Setting zero weights fully shuts off the impact of respective miners to recommendation scores.
+
+
+
 ### Recommending interactions in the current context
-Before explaining how to train the miners, it must be pointed out that predictions change as users switch contexts.
+Before explaining how to train miners, it must be pointed out that predictions change as users switch contexts.
 In HELIOS, multiple contexts (e.g. home, work) may be defined by each user. In case where context switching is a not a
-necessity in an application, a generic-purpose context can be created and set up as the current one.
+necessity in an application, one generic-purpose context can be created and set up as the current one.
 Doing this with the contextual ego network management library can be achieved through the following code:
 
 ```java
@@ -232,7 +230,7 @@ As a final note, PPRMiners extend the social graph mining class and hence need t
 neighbors given the previous communication scheme. For example usage of the PPRMiner, please refer to the
 simulation code at *eu.h2020.helios_social.modules.socialgraphmining.experiments.DiffusionSimulation.java*.
 For applications that already implement a switchable miner and have implemented a communication scheme for the latter,
-a new PPRMiner instance can be explicitly registered with the following code:
+a new PPRMiner instance can be registered with the following code:
 
 ```Java
 

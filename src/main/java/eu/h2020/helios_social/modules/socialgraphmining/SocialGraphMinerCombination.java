@@ -12,19 +12,17 @@ import eu.h2020.helios_social.core.contextualegonetwork.Utils;
 
 
 /**
- * This class enables switching between different {@link SocialGraphMiner} implementations
- * for performing predictions while training them at the same time. After initializing it,
- * add miners using its {@link #createMiner(String, Class)} method. The active miner can
- * be selected using the {@link #setActiveMiner(String)} method.
+ * This class enables holding different {@link SocialGraphMiner} instances to combine
+ * their functionality. After initializing it, add miners using its
+ * {@link #createMiner(String, Class)} method.
  * 
  * @author Emmanouil Krasanakis
  */
-public class SwitchableMiner extends SocialGraphMiner {
+public abstract class SocialGraphMinerCombination extends SocialGraphMiner {
 	private boolean locked = false;
-	private SocialGraphMiner activeMiner;
 	private HashMap<String, SocialGraphMiner> miners = new HashMap<String, SocialGraphMiner>();
 
-	public SwitchableMiner(ContextualEgoNetwork contextualEgoNetwork) {
+	public SocialGraphMinerCombination(ContextualEgoNetwork contextualEgoNetwork) {
 		super(contextualEgoNetwork);
 	}
 	
@@ -40,10 +38,9 @@ public class SwitchableMiner extends SocialGraphMiner {
 	 * 
 	 * @param minerName The name to be assigned at the miner.
 	 * @param minerClass The class of the created miner (should have a constructor with exactly one SocialEgoNetwork argument).
-	 * @param SocialGraphMinerClass The implicitly understood class of the created miner.
+	 * @param <SocialGraphMinerClass> The implicitly understood class of the created miner.
 	 * @return The created miner.
 	 * @see #getMiner(String)
-	 * @see #setActiveMiner(String)
 	 */
 	public <SocialGraphMinerClass extends SocialGraphMiner> SocialGraphMinerClass createMiner(String minerName, Class<SocialGraphMinerClass> minerClass) {
 		if(locked)
@@ -68,7 +65,6 @@ public class SwitchableMiner extends SocialGraphMiner {
 	 * @param miner The implicitly understood class of the created miner.
 	 * 
 	 * @see #getMiner(String)
-	 * @see #setActiveMiner(String)
 	 */
 	public void registerMiner(String minerName, SocialGraphMiner miner) {
 		if(locked)
@@ -80,15 +76,6 @@ public class SwitchableMiner extends SocialGraphMiner {
 		if(miners.values().contains(miner))
 			Utils.error("Miner already registered (perhaps with a different name)");
 		miners.put(minerName, miner);
-	}
-	
-	/**
-	 * Retrieves the active miner.
-	 * @return The active miner.
-	 * @see #setActiveMiner(String)
-	 */
-	public SocialGraphMiner getActiveMiner() {
-		return activeMiner;
 	}
 	
 	/**
@@ -113,21 +100,6 @@ public class SwitchableMiner extends SocialGraphMiner {
 		}
 		return miner;
 	} 
-	
-	/**
-	 * Gets a created miner with {@link #getMiner(String)} and, if such a miner is found,
-	 * this is set as the active miner. The active miner is subsequently called to expose its outcome
-	 * of {@link #predictNewInteraction(Context, Node)} and {@link #recommendInteractions(Context)}.
-	 * Other functionalities are shared between all created miners.
-	 * @param minerName The name of the miner to set as the 
-	 * @return The new active miner
-	 * @see #getActiveMiner()
-	 * @see #createMiner(String, Class)
-	 */
-	public SocialGraphMiner setActiveMiner(String minerName) {
-		activeMiner = getMiner(minerName);
-		return activeMiner;
-	} 
 
 	@Override
 	public void newInteractionParameters(Interaction interaction, SocialGraphMinerParameters neighborModelParameters, InteractionType interactionType) {
@@ -149,22 +121,6 @@ public class SwitchableMiner extends SocialGraphMiner {
 					ret.put(minerEntry.getKey(), minerParameters);
 		}
 		return ret;
-	}
-
-	@Override
-	public double predictNewInteraction(Context context, Node destinationNode) {
-		locked = true;
-		if(activeMiner==null)
-			Utils.error("Must set an active miner before trying to predict interactions");
-		return activeMiner.predictNewInteraction(context, destinationNode);
-	}
-	
-	@Override
-    public HashMap<Node, Double> recommendInteractions(Context context) {
-		locked = true;
-		if(activeMiner==null)
-			Utils.error("Must set an active miner before trying to predict interactions");
-		return activeMiner.recommendInteractions(context);
 	}
 	
 }

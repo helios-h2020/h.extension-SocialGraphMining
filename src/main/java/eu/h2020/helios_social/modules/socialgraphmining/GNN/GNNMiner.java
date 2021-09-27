@@ -59,11 +59,13 @@ public class GNNMiner extends SocialGraphMiner {
 	 * The learning rate (default is 1) from which GNNMiner training starts. Training restarts
 	 * on each {@link #newInteraction} from this value and can be potentially be adapted by
 	 * {@link #setLearningRateDegradation} over training epochs.
-	 * @param learningRate The learning rate to restart from.
+	 * @param learningRate The learning rate to restart from. Should be positive.
 	 * @return <code>this</code> GNNMiner instance.
 	 * @see GNNNodeData#setLearningRate(double)
 	 */
 	public GNNMiner setLearningRate(double learningRate) {
+		if(!Double.isFinite(learningRate) || learningRate<=0)
+			Utils.error(new IllegalArgumentException("Learning rate "+learningRate+" should be positive."));
 		this.learningRate = learningRate;
 		return this;
 	}
@@ -82,11 +84,13 @@ public class GNNMiner extends SocialGraphMiner {
 	/**
 	 * Performs a fixed degradation of the learning rate over training epochs by multiplying the latter
 	 * with a given factor (default is 0.95) after each epoch.
-	 * @param learningRateDegradation The rate at which learning rate degrades.
+	 * @param learningRateDegradation The rate at which learning rate degrade. Should lie in the range (0,1].
 	 * @return <code>this</code> GNNMiner instance.
 	 * @see #setLearningRate(double)
 	 */
 	public GNNMiner setLearningRateDegradation(double learningRateDegradation) {
+		if(!Double.isFinite(learningRateDegradation) || learningRateDegradation<=0 || learningRateDegradation>1)
+			Utils.error(new IllegalArgumentException("Learning rate degradation "+learningRateDegradation+" should be in the range (0,1]"));
 		this.learningRateDegradation = learningRateDegradation;
 		return this;
 	}
@@ -113,10 +117,12 @@ public class GNNMiner extends SocialGraphMiner {
 	 * embeddings calculated on alter devices. Value of 0 produce regularization towards zero,
 	 * which effectively limits the embedding norm to the approximate order of magnitude
 	 * 1/weight, where weight is the value set to {@link #setRegularizationWeight(double)}.
-	 * @param regularizationAbsorbsion
+	 * @param regularizationAbsorbsion A value in the range [0,1].
 	 * @return <code>this</code> GNNMiner instance.
 	 */
 	public GNNMiner setRegularizationAbsorbsion(double regularizationAbsorbsion) {
+		if(!Double.isFinite(regularizationAbsorbsion) || regularizationAbsorbsion<0 || regularizationAbsorbsion>1)
+			Utils.error(new IllegalArgumentException("Regularization absorbition "+regularizationAbsorbsion+" should lie in the range [0,1]"));
 		this.regularizationAbsorbsion = regularizationAbsorbsion;
 		return this;
 	}

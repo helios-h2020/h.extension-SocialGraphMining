@@ -61,7 +61,8 @@ public abstract class SocialGraphMiner {
 
 	/**
 	 * Sets whether the miner is permitted to send parameters when asked to, thus helping write seamless code, especially
-	 * when multiple miner parameters are simultaneously send by {@link SwitchableMiner}. Setting send permisions to <code>true></code>
+	 * when multiple miner parameters are simultaneously send by {@link SocialGraphMinerCombination} instances.
+	 * Setting send permissions to <code>true</code>
 	 * makes miners work as intended, but setting them to <code>false</code> would force them to not send parameters
 	 * that would improve recommendations for others.
 	 * @param sendPermision Whether to allow the miner to send parameters.
